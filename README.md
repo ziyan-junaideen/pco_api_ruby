@@ -203,6 +203,7 @@ The following errors may be raised by the library, depending on the API response
 | 404                 | `PCO::API::Errors::NotFound` < `PCO::API::Errors::ClientError`            |
 | 405                 | `PCO::API::Errors::MethodNotAllowed` < `PCO::API::Errors::ClientError`    |
 | 422                 | `PCO::API::Errors::UnprocessableEntity` < `PCO::API::Errors::ClientError` |
+| 429                 | `PCO::API::Errors::TooManyRequests` < `PCO::API::Errors::ClientError`     |
 | other 4xx errors    | `PCO::API::Errors::ClientError`                                           |
 | 500                 | `PCO::API::Errors::InternalServerError` < `PCO::API::Errors::ServerError` |
 | other 5xx errors    | `PCO::API::Errors::ServerError`                                           |
@@ -214,6 +215,7 @@ The exception object has the following methods:
 | status  | HTTP status code returned by the server     |
 | message | the message returned by the API             |
 | detail  | the full error response returned by the API |
+| headers | response headers returned by the API        |
 
 The `message` should be a simple string given by the API, e.g. "Resource Not Found".
 
@@ -221,6 +223,9 @@ In the case of validation errors, the `message` is a summary string built from t
 
 Alternatively, you may rescue `PCO::API::Errors::BaseError` and branch your code based on
 the status code returned by calling `error.status`.
+
+The `PCO::API::Errors::TooManyRequests` error has an additional method, `retry_after`, which
+tells your code how long to sleep before trying again.
 
 ## Copyright & License
 
