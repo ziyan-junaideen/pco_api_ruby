@@ -1,15 +1,27 @@
 module PCO
   module API
     class CollectionProxy
-      def initialize(connection:, path:, params:, wrap_proc:)
+      def initialize(connection:, path:, klass:, params:)
         @connection = connection
         @path = path
+        @klass = klass
         @params = params
-        @wrap_proc = wrap_proc
+        @includes = {}
+        @per_page = nil
         reset
       end
 
-      attr_reader :connection, :path, :wrap_proc
+      attr_reader :connection, :path, :klass, :wrap_proc
+
+      def includes(mappings)
+        @includes.merge!(mappings)
+        self
+      end
+
+      def per_page(number)
+        @per_page = number
+        self
+      end
 
       def each
         loop do
@@ -54,7 +66,7 @@ module PCO
       end
 
       def transform(record)
-        wrap_proc.call(record, @response['included'])
+        klass.build_object(record, included: @response['included'], include_mapping: @includes)
       end
 
       def reset
@@ -68,9 +80,11 @@ module PCO
       end
 
       def params
-        @params.update(
-          offset: @offset
-        ).reject { |_, v| v.nil? }
+        @params.dup.tap do |hash|
+          hash[:per_page] = @per_page if @per_page
+          hash[:offset] = @offset if @offset
+          hash[:include] = @includes.keys.join(',') if @includes.any?
+        end
       end
 
       def fetch_next
@@ -82,7 +96,10 @@ module PCO
       end
 
       def fetch_meta
-        connection[path].get(params.update(per_page: 0))['meta']
+        my_params = params.dup
+        my_params.delete(:include)
+        my_params[:per_page] = 0
+        connection[path].get(my_params)['meta']
       end
     end
   end

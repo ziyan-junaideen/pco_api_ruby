@@ -2,6 +2,20 @@ require_relative '../../spec_helper'
 require 'json'
 require 'ostruct'
 
+class BaseResource
+  include PCO::API::Resource
+
+  self.base_path = '/people/v2'
+end
+
+class Person < BaseResource
+  self.path = 'people'
+end
+
+class Address < BaseResource
+  self.path = 'addresses'
+end
+
 describe PCO::API::CollectionProxy do
   let(:connection) do
     PCO::API.new(basic_auth_token: 'token', basic_auth_secret: 'secret')
@@ -92,54 +106,48 @@ describe PCO::API::CollectionProxy do
     }
   end
 
-  before do
-    stub_request(
-      :get,
-      'https://api.planningcenteronline.com/people/v2/people'
-    ).to_return(
-      status: 200,
-      body: response1.to_json,
-      headers: { 'Content-Type' => 'application/vnd.api+json' }
-    )
-    stub_request(
-      :get,
-      'https://api.planningcenteronline.com/people/v2/people?offset=1'
-    ).to_return(
-      status: 200,
-      body: response2.to_json,
-      headers: { 'Content-Type' => 'application/vnd.api+json' }
-    )
-  end
-
   subject do
     described_class.new(
       connection: connection,
       path: 'people/v2/people',
+      klass: Person,
       params: {},
-      wrap_proc: ->(record, _included) { record }
     )
   end
 
   describe '#all' do
+    before do
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people'
+      ).to_return(
+        status: 200,
+        body: response1.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people?offset=1'
+      ).to_return(
+        status: 200,
+        body: response2.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+    end
+
     it 'returns an array of objects' do
       results = subject.to_a
-      expect(results).to match(
+      expect(results).to eq(
         [
-          include(
-            'type' => 'Person',
-            'id' => '1',
-            'attributes' => {
-              'first_name' => 'Tim',
-              'last_name' => 'Morgan'
-            }
+          Person.new(
+            id: 1,
+            first_name: 'Tim',
+            last_name: 'Morgan'
           ),
-          include(
-            'type' => 'Person',
-            'id' => '2',
-            'attributes' => {
-              'first_name' => 'Jennie',
-              'last_name' => 'Morgan'
-            }
+          Person.new(
+            id: 2,
+            first_name: 'Jennie',
+            last_name: 'Morgan'
           )
         ]
       )
@@ -180,8 +188,8 @@ describe PCO::API::CollectionProxy do
         described_class.new(
           connection: connection,
           path: 'people/v2/people',
-          params: { per_page: 100 },
-          wrap_proc: ->(record, _included) { record }
+          klass: Person,
+          params: { per_page: 100 }
         )
       end
 
@@ -193,6 +201,25 @@ describe PCO::API::CollectionProxy do
   end
 
   describe '#each' do
+    before do
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people'
+      ).to_return(
+        status: 200,
+        body: response1.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people?offset=1'
+      ).to_return(
+        status: 200,
+        body: response2.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+    end
+
     it 'yields objects' do
       results = []
       subject.each do |object|
@@ -203,15 +230,25 @@ describe PCO::API::CollectionProxy do
   end
 
   describe '#first' do
+    before do
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people'
+      ).to_return(
+        status: 200,
+        body: response1.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+    end
+
     it 'returns the first object' do
       result = subject.first
-      expect(result).to include(
-        'type' => 'Person',
-        'id' => '1',
-        'attributes' => {
-          'first_name' => 'Tim',
-          'last_name' => 'Morgan'
-        }
+      expect(result).to eq(
+        Person.new(
+          id: 1,
+          first_name: 'Tim',
+          last_name: 'Morgan'
+        )
       )
     end
   end
@@ -236,18 +273,105 @@ describe PCO::API::CollectionProxy do
         body: meta_response.to_json,
         headers: { 'Content-Type' => 'application/vnd.api+json' }
       )
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people?offset=1'
+      ).to_return(
+        status: 200,
+        body: response2.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
     end
 
     it 'returns the last object' do
       result = subject.last
-      expect(result).to include(
-        'type' => 'Person',
-        'id' => '2',
-        'attributes' => {
-          'first_name' => 'Jennie',
-          'last_name' => 'Morgan'
-        }
+      expect(result).to eq(
+        Person.new(
+          id: 2,
+          first_name: 'Jennie',
+          last_name: 'Morgan'
+        )
       )
+    end
+  end
+
+  describe '#per_page' do
+    before do
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people?per_page=100'
+      ).to_return(
+        status: 200,
+        body: response1.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people?per_page=100&offset=1'
+      ).to_return(
+        status: 200,
+        body: response2.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+    end
+
+    it 'returns self' do
+      proxy = subject.per_page(100)
+      expect(proxy).to be_a(described_class)
+    end
+
+    describe 'the returned proxy' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people?per_page=100'
+        ).to_return(
+          status: 200,
+          body: response1.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' }
+        )
+      end
+
+      it 'builds objects with included resources' do
+        result = subject.per_page(100).first
+        expect(result).to be_a(Person)
+      end
+    end
+  end
+
+  describe '#includes' do
+    it 'returns self' do
+      proxy = subject.includes('addresses' => Address)
+      expect(proxy).to be_a(described_class)
+    end
+
+    describe 'the returned proxy' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people?include=addresses'
+        ).to_return(
+          status: 200,
+          body: response1.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' }
+        )
+      end
+
+      it 'builds objects with included resources' do
+        result = subject.includes('addresses' => Address).first
+        expect(result).to be_a(Person)
+        expect(result.addresses).to eq(
+          [
+            Address.new(
+              id: 1,
+              street: '123 N Main',
+              city: 'Tulsa',
+              state: 'OK',
+              zip: '74120'
+            )
+          ]
+        )
+      end
     end
   end
 end

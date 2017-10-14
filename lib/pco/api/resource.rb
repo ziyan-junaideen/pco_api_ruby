@@ -4,7 +4,7 @@ module PCO
   module API
     module Resource
       module ClassMethods
-        attr_writer :connection, :base_path, :path, :per_page
+        attr_writer :connection, :base_path, :path
 
         def connection
           @connection || (superclass.respond_to?(:connection) ? superclass.connection : nil)
@@ -18,22 +18,29 @@ module PCO
           @path || (superclass.respond_to?(:path) ? superclass.path : nil)
         end
 
-        def per_page
-          @per_page || (superclass.respond_to?(:per_page) ? superclass.per_page : nil)
-        end
-
-        def all(include: nil)
+        def all
           CollectionProxy.new(
             connection: connection,
             path: full_path,
-            params: {
-              per_page: per_page,
-              include: include.keys.join(',')
-            },
-            wrap_proc: lambda { |record, included|
-              build_object(record, included: included, include_mapping: include)
-            }
+            klass: self,
+            params: {}
           )
+        end
+
+        def first
+          all.first
+        end
+
+        def last
+          all.last
+        end
+
+        def per_page(count)
+          all.per_page(count)
+        end
+
+        def includes(mappings)
+          all.includes(mappings)
         end
 
         def build_object(record, included: {}, include_mapping: {})
@@ -54,12 +61,13 @@ module PCO
               data['data'].map { |r| r['id'] }.include?(rec['id'])
             end
             hash[rel] = records.map do |record|
+              next unless include_mapping[rel]
               include_mapping[rel].build_object(
                 record,
                 included: included,
                 include_mapping: include_mapping
               )
-            end
+            end.compact
           end
           hash
         end
