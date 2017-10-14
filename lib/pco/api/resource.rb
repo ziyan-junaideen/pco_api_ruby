@@ -68,7 +68,7 @@ module PCO
         def build_included(relationships, included: {}, include_mapping: {})
           hash = {}
           (relationships || {}).each do |rel, data|
-            included_of_type = included.select { |rec| rec['type'] == data['data'].first['type'] }
+            included_of_type = included.select { |rec| rec['type'] == (data['data'].first || {})['type'] }
             records = included_of_type.select do |rec|
               data['data'].map { |r| r['id'] }.include?(rec['id'])
             end

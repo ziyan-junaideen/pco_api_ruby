@@ -478,7 +478,7 @@ describe PCO::API::CollectionProxy do
         end
 
         it 'builds objects with included resources' do
-          result = subject.includes('addresses' => Address).find(1)
+          result = subject.includes(addresses: Address).find(1)
           expect(result).to be_a(Person)
           expect(result.addresses).to eq(
             [

@@ -31,7 +31,9 @@ module PCO
       end
 
       def includes(mappings)
-        @includes.merge!(mappings)
+        mappings.each do |key, val|
+          @includes[key.to_s] = val
+        end
         self
       end
 
