@@ -1,4 +1,5 @@
 require_relative 'api/endpoint'
+require_relative 'api/resource'
 require_relative 'api/errors'
 
 module PCO
