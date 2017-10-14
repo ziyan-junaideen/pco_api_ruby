@@ -68,14 +68,6 @@ describe PCO::API::Resource do
     BaseResource.connection = PCO::API.new(basic_auth_token: 'token', basic_auth_secret: 'secret')
     stub_request(
       :get,
-      'https://api.planningcenteronline.com/people/v2/people/1'
-    ).to_return(
-      status: 200,
-      body: single_response.to_json,
-      headers: { 'Content-Type' => 'application/vnd.api+json' }
-    )
-    stub_request(
-      :get,
       'https://api.planningcenteronline.com/people/v2/people?per_page=0'
     ).to_return(
       status: 200,
@@ -101,15 +93,88 @@ describe PCO::API::Resource do
   end
 
   describe '.find' do
-    it 'returns the Person with the given id' do
-      person = Person.find(1)
-      expect(person).to eq(
-        Person.new(
-          id: 1,
-          first_name: 'Tim',
-          last_name: 'Morgan'
+    context 'when the record exists' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people/1'
+        ).to_return(
+          status: 200,
+          body: single_response.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' }
         )
-      )
+      end
+
+      it 'returns the resource with the given id' do
+        person = Person.find(1)
+        expect(person).to eq(
+          Person.new(
+            id: 1,
+            first_name: 'Tim',
+            last_name: 'Morgan'
+          )
+        )
+      end
+    end
+
+    context 'when the record does not exist' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people/1'
+        ).to_return(
+          status: 404,
+          body: { errors: [{ code: '404', detail: 'Not found' }] }.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' }
+        )
+      end
+
+      it 'raises an exception' do
+        expect { Person.find(1) }.to raise_error(PCO::API::Resource::RecordNotFound)
+      end
+    end
+  end
+
+  describe '.find_by' do
+    context 'when the record exists' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people?where[remote_id]=1'
+        ).to_return(
+          status: 200,
+          body: response1.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' }
+        )
+      end
+
+      it 'returns the first resource matching the given conditions' do
+        person = Person.find_by(remote_id: 1)
+        expect(person).to eq(
+          Person.new(
+            id: 1,
+            first_name: 'Tim',
+            last_name: 'Morgan'
+          )
+        )
+      end
+    end
+
+    context 'when the record does not exist' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people?where[remote_id]=1'
+        ).to_return(
+          status: 200,
+          body: { data: [] }.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' }
+        )
+      end
+
+      it 'returns nil' do
+        expect(Person.find_by(remote_id: 1)).to eq(nil)
+      end
     end
   end
 
@@ -149,7 +214,7 @@ describe PCO::API::Resource do
   end
 
   describe '.first' do
-    it 'returns the first Person' do
+    it 'returns the first resource' do
       person = Person.first
       expect(person).to eq(
         Person.new(
@@ -162,7 +227,7 @@ describe PCO::API::Resource do
   end
 
   describe '.last' do
-    it 'returns the last Person' do
+    it 'returns the last resource' do
       person = Person.last
       expect(person).to eq(
         Person.new(

@@ -29,6 +29,12 @@ module PCO
 
         def find(id)
           all.find(id)
+        rescue PCO::API::Errors::NotFound
+          raise Resource::RecordNotFound
+        end
+
+        def find_by(conditions)
+          all.where(conditions).first
         end
 
         def first
@@ -106,6 +112,8 @@ module PCO
           [base_path, path].compact.join('/').gsub(%r{//}, '/').sub(%r{^/}, '')
         end
       end
+
+      class RecordNotFound < StandardError; end
 
       def self.included(base)
         base.extend(ClassMethods)
