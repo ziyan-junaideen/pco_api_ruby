@@ -82,6 +82,8 @@ module PCO
           fail Errors::MethodNotAllowed, result
         when 422
           fail Errors::UnprocessableEntity, result
+        when 429
+          fail Errors::TooManyRequests, result
         when 400..499
           fail Errors::ClientError, result
         when 500

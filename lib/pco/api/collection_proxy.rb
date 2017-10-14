@@ -76,6 +76,9 @@ module PCO
       def fetch_next
         @response = connection[path].get(params)
         @offset = @offset.to_i + 1
+      rescue PCO::API::Errors::TooManyRequests => e
+        sleep e.retry_after
+        retry
       end
 
       def fetch_meta

@@ -4,11 +4,12 @@ module PCO
       class AuthRequiredError < StandardError; end
 
       class BaseError < StandardError
-        attr_reader :status, :detail
+        attr_reader :status, :detail, :headers
 
         def initialize(response)
           @status = response.status
           @detail = response.body
+          @headers = response.headers
         end
 
         def to_s
@@ -52,6 +53,12 @@ module PCO
       class NotFound            < ClientError; end # 404
       class MethodNotAllowed    < ClientError; end # 405
       class UnprocessableEntity < ClientError; end # 422
+
+      class TooManyRequests < ClientError # 429
+        def retry_after
+          @headers['Retry-After'].to_i
+        end
+      end
 
       class ServerError         < BaseError;   end # 500..599
       class InternalServerError < ServerError; end # 500

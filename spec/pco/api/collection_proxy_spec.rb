@@ -144,6 +144,52 @@ describe PCO::API::CollectionProxy do
         ]
       )
     end
+
+    context 'when a rate limit error occurs' do
+      before do
+        stub_request(
+          :get,
+          'https://api.planningcenteronline.com/people/v2/people?per_page=100'
+        ).to_return(
+          [
+            {
+              status: 429,
+              body: {
+                errors: [
+                  { code: '429', detail: 'Rate limit exceeded: 116 of 100 requests per 20 seconds' }
+                ]
+              }.to_json,
+              headers: {
+                'Content-Type'                  => 'application/vnd.api+json',
+                'X-PCO-API-Request-Rate-Count'  => '116',
+                'X-PCO-API-Request-Rate-Limit'  => '100',
+                'X-PCO-API-Request-Rate-Period' => '20 seconds',
+                'Retry-After'                   => '1'
+              }
+            },
+            {
+              status: 200,
+              body: response1.to_json,
+              headers: { 'Content-Type' => 'application/vnd.api+json' }
+            }
+          ]
+        )
+      end
+
+      subject do
+        described_class.new(
+          connection: connection,
+          path: 'people/v2/people',
+          params: { per_page: 100 },
+          wrap_proc: ->(record, _included) { record }
+        )
+      end
+
+      it 'sleeps and then retries' do
+        expect(subject).to receive(:sleep).with(1)
+        subject.first
+      end
+    end
   end
 
   describe '#each' do
