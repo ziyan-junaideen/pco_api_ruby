@@ -100,6 +100,13 @@ describe PCO::API::Resource do
     end
   end
 
+  describe '.order' do
+    it 'returns a CollectionProxy' do
+      proxy = Person.order('first_name')
+      expect(proxy).to be_a(PCO::API::CollectionProxy)
+    end
+  end
+
   describe '.includes' do
     it 'returns a CollectionProxy' do
       proxy = Person.includes('addresses' => Address)

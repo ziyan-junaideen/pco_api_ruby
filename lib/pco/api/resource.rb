@@ -43,6 +43,10 @@ module PCO
           all.where(conditions)
         end
 
+        def order(*attrs)
+          all.order(*attrs)
+        end
+
         def includes(mappings)
           all.includes(mappings)
         end

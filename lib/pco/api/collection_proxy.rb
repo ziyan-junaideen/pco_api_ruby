@@ -8,6 +8,7 @@ module PCO
         @params = params
         @per_page = nil
         @wheres = {}
+        @order = []
         @includes = {}
         reset
       end
@@ -21,6 +22,11 @@ module PCO
 
       def where(conditions)
         @wheres.merge!(conditions)
+        self
+      end
+
+      def order(*attrs)
+        @order += attrs
         self
       end
 
@@ -89,6 +95,7 @@ module PCO
         @params.dup.tap do |hash|
           hash[:per_page] = @per_page if @per_page
           hash[:where] = @wheres if @wheres
+          hash[:order] = @order.join(',') if @order.any?
           hash[:offset] = @offset if @offset
           hash[:include] = @includes.keys.join(',') if @includes.any?
         end
