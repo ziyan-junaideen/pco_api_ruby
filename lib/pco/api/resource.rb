@@ -34,7 +34,7 @@ module PCO
         end
 
         def find_by(conditions)
-          all.where(conditions).first
+          all.find_by(conditions)
         end
 
         def first

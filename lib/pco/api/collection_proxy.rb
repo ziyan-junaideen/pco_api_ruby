@@ -42,6 +42,10 @@ module PCO
         transform(record['data'])
       end
 
+      def find_by(conditions)
+        where(conditions).first
+      end
+
       def each
         loop do
           fetch_next if more?
