@@ -141,12 +141,51 @@ describe PCO::API::CollectionProxy do
     }
   end
 
+  let(:addresses_response) do
+    {
+      data: [
+        {
+          type: 'Address',
+          id: '1',
+          attributes: {
+            street: '123 N Main.',
+            city: 'Tulsa',
+            state: 'OK',
+            zip: '74120'
+          },
+          relationships: {
+            person: {
+              data: {
+                type: 'Person',
+                'id': '1'
+              }
+            }
+          }
+        }
+      ],
+      included: [
+        {
+          type: 'Person',
+          id: '1',
+          attributes: {
+            first_name: 'Tim',
+            last_name: 'Morgan'
+          }
+        }
+      ],
+      meta: {
+        total_count: 1,
+        count: 1
+      }
+    }
+  end
+
   subject do
     described_class.new(
       connection: connection,
       path: 'people/v2/people',
       klass: Person,
-      params: {},
+      params: {}
     )
   end
 
@@ -437,31 +476,67 @@ describe PCO::API::CollectionProxy do
 
     describe 'the returned proxy' do
       describe '#first' do
-        before do
-          stub_request(
-            :get,
-            'https://api.planningcenteronline.com/people/v2/people?include=addresses'
-          ).to_return(
-            status: 200,
-            body: response1.to_json,
-            headers: { 'Content-Type' => 'application/vnd.api+json' }
-          )
+        context 'when the relationship is a has-many' do
+          before do
+            stub_request(
+              :get,
+              'https://api.planningcenteronline.com/people/v2/people?include=addresses'
+            ).to_return(
+              status: 200,
+              body: response1.to_json,
+              headers: { 'Content-Type' => 'application/vnd.api+json' }
+            )
+          end
+
+          it 'builds the object with included resources' do
+            result = subject.includes('addresses' => Address).first
+            expect(result).to be_a(Person)
+            expect(result.addresses).to eq(
+              [
+                Address.new(
+                  id: 1,
+                  street: '123 N Main',
+                  city: 'Tulsa',
+                  state: 'OK',
+                  zip: '74120'
+                )
+              ]
+            )
+          end
         end
 
-        it 'builds objects with included resources' do
-          result = subject.includes('addresses' => Address).first
-          expect(result).to be_a(Person)
-          expect(result.addresses).to eq(
-            [
-              Address.new(
+        context 'when the relationship is a has-one' do
+          before do
+            stub_request(
+              :get,
+              'https://api.planningcenteronline.com/people/v2/addresses?include=person'
+            ).to_return(
+              status: 200,
+              body: addresses_response.to_json,
+              headers: { 'Content-Type' => 'application/vnd.api+json' }
+            )
+          end
+
+          subject do
+            described_class.new(
+              connection: connection,
+              path: 'people/v2/addresses',
+              klass: Address,
+              params: {}
+            )
+          end
+
+          it 'builds the object with included resource' do
+            result = subject.includes('person' => Person).first
+            expect(result).to be_a(Address)
+            expect(result.person).to eq(
+              Person.new(
                 id: 1,
-                street: '123 N Main',
-                city: 'Tulsa',
-                state: 'OK',
-                zip: '74120'
+                first_name: 'Tim',
+                last_name: 'Morgan'
               )
-            ]
-          )
+            )
+          end
         end
       end
 
@@ -477,7 +552,7 @@ describe PCO::API::CollectionProxy do
           )
         end
 
-        it 'builds objects with included resources' do
+        it 'builds the object with included resources' do
           result = subject.includes(addresses: Address).find(1)
           expect(result).to be_a(Person)
           expect(result.addresses).to eq(

@@ -68,20 +68,38 @@ module PCO
         def build_included(relationships, included: {}, include_mapping: {})
           hash = {}
           (relationships || {}).each do |rel, data|
-            included_of_type = included.select { |rec| rec['type'] == (data['data'].first || {})['type'] }
-            records = included_of_type.select do |rec|
-              data['data'].map { |r| r['id'] }.include?(rec['id'])
+            if data['data'].is_a?(Array)
+              hash[rel] = build_included_array(rel, data['data'], included: included, include_mapping: include_mapping)
+            else
+              hash[rel] = build_included_single(rel, data['data'], included: included, include_mapping: include_mapping)
             end
-            hash[rel] = records.map do |record|
-              next unless include_mapping[rel]
-              include_mapping[rel].build_object(
-                record,
-                included: included,
-                include_mapping: include_mapping
-              )
-            end.compact
           end
           hash
+        end
+
+        def build_included_array(rel, data, included:, include_mapping:)
+          included_of_type = included.select { |rec| rec['type'] == data.first['type'] }
+          records = included_of_type.select do |rec|
+            data.map { |r| r['id'] }.include?(rec['id'])
+          end
+          records.map do |record|
+            next unless include_mapping[rel]
+            include_mapping[rel].build_object(
+              record,
+              included: included,
+              include_mapping: include_mapping
+            )
+          end.compact
+        end
+
+        def build_included_single(rel, data, included:, include_mapping:)
+          return unless include_mapping[rel]
+          record = included.detect { |rec| rec['type'] == data['type'] && rec['id'] == data['id'] }
+          include_mapping[rel].build_object(
+            record,
+            included: included,
+            include_mapping: include_mapping
+          )
         end
 
         def full_path
