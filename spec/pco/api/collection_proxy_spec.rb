@@ -21,6 +21,41 @@ describe PCO::API::CollectionProxy do
     PCO::API.new(basic_auth_token: 'token', basic_auth_secret: 'secret')
   end
 
+  let(:single_response) do
+    {
+      data: {
+        type: 'Person',
+        id: '1',
+        attributes: {
+          first_name: 'Tim',
+          last_name: 'Morgan'
+        },
+        relationships: {
+          addresses: {
+            data: [
+              {
+                type: 'Address',
+                'id': '1'
+              }
+            ]
+          }
+        }
+      },
+      included: [
+        {
+          type: 'Address',
+          id: '1',
+          attributes: {
+            street: '123 N Main',
+            city: 'Tulsa',
+            state: 'OK',
+            zip: '74120'
+          }
+        }
+      ]
+    }
+  end
+
   let(:response1) do
     {
       data: [
@@ -113,6 +148,30 @@ describe PCO::API::CollectionProxy do
       klass: Person,
       params: {},
     )
+  end
+
+  describe '#find' do
+    before do
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people/1'
+      ).to_return(
+        status: 200,
+        body: single_response.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+    end
+
+    it 'returns the object' do
+      result = subject.find(1)
+      expect(result).to eq(
+        Person.new(
+          id: 1,
+          first_name: 'Tim',
+          last_name: 'Morgan'
+        )
+      )
+    end
   end
 
   describe '#all' do
@@ -377,31 +436,62 @@ describe PCO::API::CollectionProxy do
     end
 
     describe 'the returned proxy' do
-      before do
-        stub_request(
-          :get,
-          'https://api.planningcenteronline.com/people/v2/people?include=addresses'
-        ).to_return(
-          status: 200,
-          body: response1.to_json,
-          headers: { 'Content-Type' => 'application/vnd.api+json' }
-        )
+      describe '#first' do
+        before do
+          stub_request(
+            :get,
+            'https://api.planningcenteronline.com/people/v2/people?include=addresses'
+          ).to_return(
+            status: 200,
+            body: response1.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' }
+          )
+        end
+
+        it 'builds objects with included resources' do
+          result = subject.includes('addresses' => Address).first
+          expect(result).to be_a(Person)
+          expect(result.addresses).to eq(
+            [
+              Address.new(
+                id: 1,
+                street: '123 N Main',
+                city: 'Tulsa',
+                state: 'OK',
+                zip: '74120'
+              )
+            ]
+          )
+        end
       end
 
-      it 'builds objects with included resources' do
-        result = subject.includes('addresses' => Address).first
-        expect(result).to be_a(Person)
-        expect(result.addresses).to eq(
-          [
-            Address.new(
-              id: 1,
-              street: '123 N Main',
-              city: 'Tulsa',
-              state: 'OK',
-              zip: '74120'
-            )
-          ]
-        )
+      describe '#find' do
+        before do
+          stub_request(
+            :get,
+            'https://api.planningcenteronline.com/people/v2/people/1?include=addresses'
+          ).to_return(
+            status: 200,
+            body: single_response.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' }
+          )
+        end
+
+        it 'builds objects with included resources' do
+          result = subject.includes('addresses' => Address).find(1)
+          expect(result).to be_a(Person)
+          expect(result.addresses).to eq(
+            [
+              Address.new(
+                id: 1,
+                street: '123 N Main',
+                city: 'Tulsa',
+                state: 'OK',
+                zip: '74120'
+              )
+            ]
+          )
+        end
       end
     end
   end

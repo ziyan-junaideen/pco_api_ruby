@@ -35,6 +35,11 @@ module PCO
         self
       end
 
+      def find(id)
+        record = fetch(File.join(path, id.to_s))
+        transform(record['data'])
+      end
+
       def each
         loop do
           fetch_next if more?
@@ -102,8 +107,12 @@ module PCO
       end
 
       def fetch_next
-        @response = connection[path].get(params)
+        fetch(path)
         @offset = @offset.to_i + 1
+      end
+
+      def fetch(path)
+        @response = connection[path].get(params)
       rescue PCO::API::Errors::TooManyRequests => e
         sleep e.retry_after
         retry

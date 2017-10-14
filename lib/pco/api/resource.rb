@@ -27,6 +27,10 @@ module PCO
           )
         end
 
+        def find(id)
+          all.find(id)
+        end
+
         def first
           all.first
         end

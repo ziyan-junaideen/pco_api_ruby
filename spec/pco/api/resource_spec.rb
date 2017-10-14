@@ -16,6 +16,19 @@ class Address < BaseResource
 end
 
 describe PCO::API::Resource do
+  let(:single_response) do
+    {
+      data: {
+        type: 'Person',
+        id: '1',
+        attributes: {
+          first_name: 'Tim',
+          last_name: 'Morgan'
+        }
+      }
+    }
+  end
+
   let(:response1) do
     {
       data: [
@@ -55,6 +68,14 @@ describe PCO::API::Resource do
     BaseResource.connection = PCO::API.new(basic_auth_token: 'token', basic_auth_secret: 'secret')
     stub_request(
       :get,
+      'https://api.planningcenteronline.com/people/v2/people/1'
+    ).to_return(
+      status: 200,
+      body: single_response.to_json,
+      headers: { 'Content-Type' => 'application/vnd.api+json' }
+    )
+    stub_request(
+      :get,
       'https://api.planningcenteronline.com/people/v2/people?per_page=0'
     ).to_return(
       status: 200,
@@ -77,6 +98,19 @@ describe PCO::API::Resource do
       body: response2.to_json,
       headers: { 'Content-Type' => 'application/vnd.api+json' }
     )
+  end
+
+  describe '.find' do
+    it 'returns the Person with the given id' do
+      person = Person.find(1)
+      expect(person).to eq(
+        Person.new(
+          id: 1,
+          first_name: 'Tim',
+          last_name: 'Morgan'
+        )
+      )
+    end
   end
 
   describe '.all' do
