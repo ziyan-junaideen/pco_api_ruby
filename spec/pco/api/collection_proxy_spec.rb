@@ -305,14 +305,6 @@ describe PCO::API::CollectionProxy do
         body: response1.to_json,
         headers: { 'Content-Type' => 'application/vnd.api+json' }
       )
-      stub_request(
-        :get,
-        'https://api.planningcenteronline.com/people/v2/people?per_page=100&offset=1'
-      ).to_return(
-        status: 200,
-        body: response2.to_json,
-        headers: { 'Content-Type' => 'application/vnd.api+json' }
-      )
     end
 
     it 'returns self' do
@@ -321,19 +313,33 @@ describe PCO::API::CollectionProxy do
     end
 
     describe 'the returned proxy' do
-      before do
-        stub_request(
-          :get,
-          'https://api.planningcenteronline.com/people/v2/people?per_page=100'
-        ).to_return(
-          status: 200,
-          body: response1.to_json,
-          headers: { 'Content-Type' => 'application/vnd.api+json' }
-        )
-      end
-
       it 'builds objects with included resources' do
         result = subject.per_page(100).first
+        expect(result).to be_a(Person)
+      end
+    end
+  end
+
+  describe '#where' do
+    before do
+      stub_request(
+        :get,
+        'https://api.planningcenteronline.com/people/v2/people?where[first_name]=Tim&where[last_name]=Morgan'
+      ).to_return(
+        status: 200,
+        body: response1.to_json,
+        headers: { 'Content-Type' => 'application/vnd.api+json' }
+      )
+    end
+
+    it 'returns self' do
+      proxy = subject.where(first_name: 'Tim', last_name: 'Morgan')
+      expect(proxy).to be_a(described_class)
+    end
+
+    describe 'the returned proxy' do
+      it 'builds objects with included resources' do
+        result = subject.where(first_name: 'Tim', last_name: 'Morgan').first
         expect(result).to be_a(Person)
       end
     end

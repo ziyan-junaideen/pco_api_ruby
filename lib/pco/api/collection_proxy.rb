@@ -6,20 +6,26 @@ module PCO
         @path = path
         @klass = klass
         @params = params
-        @includes = {}
         @per_page = nil
+        @wheres = {}
+        @includes = {}
         reset
       end
 
       attr_reader :connection, :path, :klass, :wrap_proc
 
-      def includes(mappings)
-        @includes.merge!(mappings)
+      def per_page(number)
+        @per_page = number
         self
       end
 
-      def per_page(number)
-        @per_page = number
+      def where(conditions)
+        @wheres.merge!(conditions)
+        self
+      end
+
+      def includes(mappings)
+        @includes.merge!(mappings)
         self
       end
 
@@ -82,6 +88,7 @@ module PCO
       def params
         @params.dup.tap do |hash|
           hash[:per_page] = @per_page if @per_page
+          hash[:where] = @wheres if @wheres
           hash[:offset] = @offset if @offset
           hash[:include] = @includes.keys.join(',') if @includes.any?
         end

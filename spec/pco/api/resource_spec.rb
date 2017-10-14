@@ -93,6 +93,13 @@ describe PCO::API::Resource do
     end
   end
 
+  describe '.where' do
+    it 'returns a CollectionProxy' do
+      proxy = Person.where(remote_id: 1)
+      expect(proxy).to be_a(PCO::API::CollectionProxy)
+    end
+  end
+
   describe '.includes' do
     it 'returns a CollectionProxy' do
       proxy = Person.includes('addresses' => Address)

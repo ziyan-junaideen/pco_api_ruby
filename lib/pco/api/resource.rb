@@ -39,6 +39,10 @@ module PCO
           all.per_page(count)
         end
 
+        def where(conditions)
+          all.where(conditions)
+        end
+
         def includes(mappings)
           all.includes(mappings)
         end
