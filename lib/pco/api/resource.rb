@@ -136,7 +136,7 @@ module PCO
       end
 
       def attributes_method_missing(name)
-        @attribute[name.to_s] if @attributes.key?(name.to_s)
+        @attributes[name.to_s] if @attributes.key?(name.to_s)
       end
 
       def respond_to_missing?(name, include_private = false)
