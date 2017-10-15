@@ -63,6 +63,7 @@ module PCO
 
         def build_object(record, included: {}, include_mapping: {})
           object = new(record['attributes'].update('id' => record['id'].to_i))
+          object.relationships = record['relationships']
           object.included = build_included(
             record['relationships'],
             included: included,
@@ -125,7 +126,7 @@ module PCO
         @attributes = attributes
       end
 
-      attr_accessor :attributes, :included
+      attr_accessor :attributes, :included, :relationships
 
       def method_missing(name, *args)
         if name.to_s =~ /=$/
