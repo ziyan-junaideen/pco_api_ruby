@@ -99,7 +99,7 @@ module PCO
         end
 
         def build_included_single(rel, data, included:, include_mapping:)
-          return unless include_mapping[rel]
+          return unless include_mapping[rel] && data
           record = included.detect { |rec| rec['type'] == data['type'] && rec['id'] == data['id'] }
           include_mapping[rel].build_object(
             record,
@@ -127,16 +127,17 @@ module PCO
 
       attr_accessor :attributes, :included
 
-      def method_missing(name)
-        included_method_missing(name) || attributes_method_missing(name) || super
-      end
-
-      def included_method_missing(name)
-        @included[name.to_s] if @included.key?(name.to_s)
-      end
-
-      def attributes_method_missing(name)
-        @attributes[name.to_s] if @attributes.key?(name.to_s)
+      def method_missing(name, *args)
+        if name.to_s =~ /=$/
+          name = name.to_s.sub(/=$/, '')
+          @attributes[name] = args.first
+        elsif @included.key?(name.to_s)
+          @included[name.to_s]
+        elsif @attributes.key?(name.to_s)
+          @attributes[name.to_s]
+        else
+          super
+        end
       end
 
       def respond_to_missing?(name, include_private = false)
