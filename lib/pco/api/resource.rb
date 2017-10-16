@@ -85,6 +85,7 @@ module PCO
         end
 
         def build_included_array(rel, data, included:, include_mapping:)
+          return [] if data.empty?
           included_of_type = included.select { |rec| rec['type'] == data.first['type'] }
           records = included_of_type.select do |rec|
             data.map { |r| r['id'] }.include?(rec['id'])
