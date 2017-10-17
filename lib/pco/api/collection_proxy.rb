@@ -114,7 +114,7 @@ module PCO
 
       def fetch_next
         fetch(path)
-        @offset = @offset.to_i + 1
+        @offset = @offset.to_i + @per_page
       end
 
       def fetch(path)
