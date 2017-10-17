@@ -6,7 +6,7 @@ module PCO
         @path = path
         @klass = klass
         @params = params
-        @per_page = nil
+        @per_page = 25
         @wheres = {}
         @order = []
         @includes = {}
